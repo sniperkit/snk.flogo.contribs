@@ -11,31 +11,41 @@
 
 version: '3.6'
 
-
-volumes:
-  postgres-data:
-    driver: ${VOLUMES_DRIVER}
-  redis-data:
-    driver: ${VOLUMES_DRIVER}
-  mariadb-data:
-    driver: ${VOLUMES_DRIVER}
-  elasticsearch-data:
-    driver: ${VOLUMES_DRIVER}
-
-networks:
-  # main for Mac (ref: https://github.com/strapdata/openfoodfacts/blob/master/docker-compose-local-mac.yml)
-  # main:
-  # frontend:
-  #  driver: ${NETWORKS_DRIVER}
-  # backend:
-  #  driver: ${NETWORKS_DRIVER}
-
-# /Volumes/HardDrive/datasets/libraries.io
-# networks:
-#   elastic:
-#     driver: bridge
-
 services:
+
+  snk-flogo-web: &flogo_base
+    image: sniperkit/flogo-web:latest-official
+    container_name: snk-flogo-web
+    build:
+      context: ./shared/docker/flogo-web
+      dockerfile: Dockerfile
+      # args:
+      # - PARALLEL_JOBS=4
+    ports:
+    - 3303:3303
+    working_dir: "/tmp/flogo-web/build/server/local/engines/flogo-web"
+    entrypoint: /tmp/flogo-web/docker-start.sh
+    command: eula-accept
+    # networks:
+    # - main
+
+  snk-flogo-dev:
+    <<: *flogo_base
+    image: sniperkit/flogo-web:latest-dev
+    container_name: snk-flogo-dev
+    ports:
+    - "3303:3303"
+    volumes:
+    - "$PWD/shared/dumps:/snk/dumps"
+    - "$PWD/shared/dist:/snk/dist"
+    - "$PWD/imports.go:/tmp/flogo-web/build/server/local/engines/flogo-web/src/flogo-web/imports.go"
+    # - "$PWD/scripts:/snk/scripts"
+    - "$PWD/workspace:/snk/workspace"
+    working_dir: "/tmp/flogo-web/build/server/local/engines/flogo-web"
+    entrypoint: /snk/scripts/entrypoint.sh
+    command: "bash"
+    # networks:
+    # - main
 
   mysql:
     image: mysql:8
@@ -243,3 +253,22 @@ services:
     # docker-compose exec manticore indexer libiocsv_plain --rotate
     # docker-compose exec manticore indexer libiocsv_plain --rotate
 
+volumes:
+  # flogo-data:
+  #   driver: ${VOLUMES_DRIVER}
+  postgres-data:
+    driver: ${VOLUMES_DRIVER}
+  redis-data:
+    driver: ${VOLUMES_DRIVER}
+  mariadb-data:
+    driver: ${VOLUMES_DRIVER}
+  elasticsearch-data:
+    driver: ${VOLUMES_DRIVER}
+
+networks:
+  # main for Mac (ref: https://github.com/strapdata/openfoodfacts/blob/master/docker-compose-local-mac.yml)
+  # main:
+  # frontend:
+  #  driver: ${NETWORKS_DRIVER}
+  # backend:
+  #  driver: ${NETWORKS_DRIVER}
