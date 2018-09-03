@@ -1,0 +1,135 @@
+---
+services:
+
+  web:
+    # rm: true
+    interactive: true
+    tty: true
+    volume:
+    - "$PWD:/libraries.io"
+    workdir: /libraries.io
+    # share-ssh-socket: true
+    env-file:
+    - .env
+    publish:
+    - "3000:3000"
+    # hostname: web
+    link:
+    - elasticsearch:elasticsearch
+    - postgres:postgres
+    - redis:redis
+    requires:
+    - postgres
+    - elasticsearch
+    - redis
+
+  # sidekiq:
+  #  hostname: sidekiq
+
+  postgres:
+    # hostname: postgres
+    volume:
+    - "/Volumes/HardDrive/datasets/libraries.io/tarballs:/datasets/tarballs"
+
+  # elasticsearch:
+  #  hostname: elasticsearch
+
+  # redis:
+  #  hostname: redis
+
+commands:
+  sidekiq: run sidekiq bundle exec sidekiq -C config/sidekiq.yml
+  db-create: run web bundle exec rake db:create db:migrate
+  db-migrate: run web bash -c "bin/rails db:migrate RAILS_ENV=development"
+  db-test: run web bundle exec rake db:test:prepare
+  db-index: run web bundle exec rake search:reindex_everything
+  check-env: run web bash -c "set | awk -F \"=\" '{print $1}' | grep \"GITHUB_*\""
+  check-postgres: run web bash -c "ping -c 5 postgres"
+  check-redis: run web bash -c "ping -c 5 redis"
+  check-elastic: run web bash -c "ping -c 5 elasticsearch"
+  check-web: run web bash -c "ping -c 5 web"
+  web-hostname: run web bash -c "cat /etc/hostname"
+  web-hosts: run web bash -c "cat /etc/hosts"
+  rake: run web bundle exec rake -T
+  test: run web bundle exec rake
+  bash: run web bash
+  console: run web bin/rails c
+  server: run web
+  rspec: run web bin/rspec
+  rubocop: run web bin/rubocop
+  psql: exec postgres psql
+  # crane -v lift -d web
+  # crane -v cmd db-create
+  # crane -v cmd db-migrate
+  # crane -v cmd db-test
+  # crane -v cmd db-index
+  # crane cmd check-env
+  # crane cmd check-postgres
+  # crane cmd check-redis
+  # crane cmd check-elastic
+  # crane cmd check-web
+  #
+
+  # https://www.postgresql.org/docs/current/static/sql-copy.html
+  # id,platform,name,created_at,updated_at,description,keywords,homepage,licenses,repository_url,versions_count,rank,latest_release_publish_at,latest_release_number,pm_id,dependent_projects_count,language,status,last_synced_at,dependent_repositories_count,repository_id
+  # cat rawbase.txt | awk '{print $0",XYZ1374147779999,0"}' | psql -d librariesio -c "copy MSISDN FROM stdin with delimiter AS ','"
+  # psql --username=librariesio --password -d librariesio -c "\copy projects (id,platform,name,created_at,updated_at,description,keywords,homepage,licenses,repository_url,versions_count,rank,latest_release_published_at,latest_release_number,pm_id,dependents_count,language,status,last_synced_at,dependent_repos_count,repository_id) FROM projects.csv with csv header"
+  # psql --username=librariesio --password -d librariesio -c "\copy repositories (sight,department) FROM repositories.csv with csv header"
+  # copy repositories FROM /datasets/csv/repositories-1.2.0-2018-03-12.csv with csv
+
+  # docker-compose exec postgres bash
+  # docker-compose exec postgres bash
+  # docker-compose exec postgres bash
+  #
+  # homebrew
+  # docker-compose exec web bundle exec rake db:create db:migrate
+  # docker-compose exec web bundle exec rails c
+  # docker-compose exec web rake search:reindex_everything
+  # docker-compose exec web rake download:nuget_all
+  # docker-compose exec web rake download:sublime
+  # docker-compose exec web rake download:pypi_all
+  # docker-compose exec web rake download:homebrew_all
+  # docker-compose exec web rake search:reindex_everything
+  # docker-compose exec web rake tmp:clear
+  # docker-compose exec web rake download:go_all
+  # docker-compose exec web rake app:update
+  # docker-compose exec web bundle exec rails s
+  # docker-compose exec web bundle exec rake
+  # docker-compose exec sidekiq bundle exec sidekiq -C config/sidekiq.yml
+  # docker-compose exec web bundle exec sidekiq -C config/sidekiq.yml
+  #
+  # docker-compose exec web rake -T
+  # docker-compose exec sidekiq bundle exec sidekiq -C config/sidekiq.yml
+  # docker-compose exec web bash -c "bin/rails db:migrate RAILS_ENV=development"
+  # docker-compose exec web bash -c "cat /etc/hosts"
+  # docker-compose exec web bash -c "cat /etc/hostname"
+  # docker-compose exec web bash -c "ping -c 5 redis"
+  # docker-compose exec web bash -c "ping -c 5 postgres"
+  # docker-compose exec web bash -c "ping -c 5 elasticsearch"
+  # docker-compose exec web bundle exec rake db:test:prepare
+  # docker-compose exec web bundle exec rake search:reindex_everything
+
+# docker run --rm -e UNISON_CHOWN=1 -v $GOPATH/src/github.com/sniperkit/snk.fork.librariesio-libraries.io/.:/bind-mount -v crane_vol_bc1bc7fa69e4f84346395e77d0956fee:/data-volume -e UNISON_UID=1000 -e UNISON_GID=1000 --label tech.craneup.accelerated-mount=.:/libraries.io michaelsauter/crane-sync:3.2.0 -auto -batch -ignore='Name {.git}' -contactquietly -confirmbigdel=false -prefer=newer -ignorearchives /bind-mount /data-volume
+# unisonuser:x:1000
+
+accelerated-mounts:
+  postgres:
+    uid: 1000
+    gid: 1000
+  web:
+    uid: 1000
+    gid: 1000
+
+groups:
+  front:
+  - web
+  - sidekiq
+  - postgres
+  - elasticsearch
+  - redis
+  stores:
+  - postgres
+  - elasticsearch
+  - redis
+  queue:
+  - sidekiq

@@ -1,0 +1,51 @@
+.env
+.git
+*.csv
+*.dump
+
+coverage
+
+data
+data/
+data/*
+data/**
+
+log
+log/
+log/*
+log/**
+
+node_modules
+node_modules/
+node_modules/*
+node_modules/**
+
+# /tmp
+# /tmp*
+tmp
+tmp/
+tmp/*
+tmp/**
+
+crane*.y*l
+crane.yml
+
+.git
+.git/**
+.github/
+.github/**
+.gitignore
+
+.dockerignore
+*.yml
+*.md
+
+docker-compose*
+crane.*
+Dockerfile*
+Dockerfile
+Gopkg.*
+
+# data
+# data/**
+

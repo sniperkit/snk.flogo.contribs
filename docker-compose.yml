@@ -1,0 +1,245 @@
+#
+# Ports:
+# 9042         Cassandra
+# 9200         Elastic HTTP
+# 9300         Elastic Transport
+# 9092         Kafka
+# 3030         Kafka Explorer
+# 9090         Prometheus
+# 3000         Grafana
+#
+
+version: '3.6'
+
+
+volumes:
+  postgres-data:
+    driver: ${VOLUMES_DRIVER}
+  redis-data:
+    driver: ${VOLUMES_DRIVER}
+  mariadb-data:
+    driver: ${VOLUMES_DRIVER}
+  elasticsearch-data:
+    driver: ${VOLUMES_DRIVER}
+
+networks:
+  # main for Mac (ref: https://github.com/strapdata/openfoodfacts/blob/master/docker-compose-local-mac.yml)
+  # main:
+  # frontend:
+  #  driver: ${NETWORKS_DRIVER}
+  # backend:
+  #  driver: ${NETWORKS_DRIVER}
+
+# /Volumes/HardDrive/datasets/libraries.io
+# networks:
+#   elastic:
+#     driver: bridge
+
+services:
+
+  mysql:
+    image: mysql:8
+    container_name: snk-mysql8
+    restart: unless-stopped
+    environment:
+      MYSQL_USER: snk-flogo
+      MYSQL_PASSWORD: not-a-secret
+      MYSQL_DATABASE: snk-flogo
+      MYSQL_ROOT_PASSWORD: not-a-super-secret
+    ports:
+    - 3306:3306
+    # networks:
+    # - main
+    volumes:
+    - ${DATA_PATH_HOST}/mysql/8.0:/var/lib/mysql
+    - "$PWD/config/mysql:/etc/mysql/conf.d/"
+    - "/Volumes/HardDrive/datasets/libraries.io/tmp:/var/lib/mysql-files"
+    - "/Volumes/HardDrive/datasets/libraries.io/csv:/datasets/csv"
+    command: ["--default-authentication-plugin=mysql_native_password", "--local-infile"]
+    # chcon -Rt svirt_sandbox_file_t ${DATA_PATH_HOST}/mysql/8.0
+    # command: sh -c 'exec mysqldump --all-databases -uroot -p"$MYSQL_ROOT_PASSWORD"' > /Volumes/HardDrive/datasets/dumps/mysql
+    # docker-compose exec mysql sh -c 'ls -l /datasets/csv'
+    # docker-compose exec mysql sh -c 'mysqld --verbose --help | --default-authentication-plugin'
+    # docker-compose exec mysql sh -c 'mysqld --verbose --help | grep infile'
+
+  postgres:
+    image: postgres:9.6-alpine
+    container_name: snk-postgres9.6
+    restart: unless-stopped
+    ports:
+    - 5432:5432
+    volumes:
+    - ${DATA_PATH_HOST}/postgres/9.6:/var/lib/postgresql/data
+    # - postgres-data:/var/lib/postgresql/data
+    # - ${POSTGRES_ENTRYPOINT_INITDB}:/docker-entrypoint-initdb.d
+    environment:
+    - POSTGRES_PASSWORD=not-a-secret
+    - POSTGRES_USER=snk-flogo
+    # - POSTGRES_USER=${POSTGRES_USER}
+    # - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    # - POSTGRES_DB=${POSTGRES_DB}
+    # networks:
+    # - main
+    # - backend
+    # docker-compose exec postgres bash
+    # docker-compose exec postgres sh -c 'psql --username=snk-flogo --password -d snk-flogo -c "\copy projects (id,platform,name,created_at,updated_at,description,keywords,homepage,licenses,repository_url,versions_count,rank,latest_release_published_at,latest_release_number,pm_id,dependents_count,language,status,last_synced_at,dependent_repos_count,repository_id) FROM projects.csv with csv header"'
+    # psql --username=snk-flogo --password -d snk-flogo -c "\copy projects (id,platform,name,created_at,updated_at,description,keywords,homepage,licenses,repository_url,versions_count,rank,latest_release_published_at,latest_release_number,pm_id,dependents_count,language,status,last_synced_at,dependent_repos_count,repository_id) FROM projects.csv with csv header"
+
+  #fast-data-dev:
+  #  container_name: fast-data-dev-search
+  #  image: landoop/fast-data-dev:latest
+  #  ports:
+  #    - "3030:3030"
+  #    - "9092:9092"
+  #    - "2181:2181"
+  #    - "9581-9584:9581-9584"
+  #  environment:
+  #    RUNTESTS: 0
+  #    SAMPLEDATA: 0
+  #    FORWARDLOGS: 0
+  #    ADV_HOST: 127.0.0.1
+
+  # refs
+  # - https://github.com/abhilash1994/docker-elassandra/blob/master/elassandra_minimal.yml
+  elassandra:
+    container_name: snk-elassandra5.5
+    image: strapdata/elassandra:5.5.0.21
+    # image: strapdata/elassandra:5.5.0.13
+    # image: strapdata/elassandra:6.2.3.4
+    # image: strapdata/elassandra:6.2.3.5-rc1
+    # image: strapdata/elassandra:5.5.0.22-rc1
+    volumes:
+    - ${DATA_PATH_HOST}/elassandra/5.5:/usr/share/cassandra/data
+    ports:
+      - "9201:9200"
+      - "9301:9300"
+      - "9042:9042"
+      - "7199:7199"
+    # networks:
+    # - main
+    environment:
+      CASSANDRA_DC: DC1
+      CASSANDRA_CLUSTER_NAME: CYBER_SEARCH
+
+  prometheus:
+    container_name: snk-prometheus2.3
+    restart: on-failure
+    image: prom/prometheus:v2.3.2
+    # image: prom/prometheus:v2.1.0
+    volumes:
+    - "$PWD/config/prometheus.yml:/etc/prometheus/prometheus.yml"
+    # networks:
+    # - main
+    ports:
+    - "9090:9090"
+
+  grafana:
+    container_name: snk-grafana5.2
+    restart: on-failure
+    image: grafana/grafana:5.2.3
+    ports:
+    - "3000:3000"
+    # image: grafana/grafana:5.0.4
+    # networks:
+    # - main
+
+  postgres10:
+    image: postgres:10.5-alpine
+    container_name: snk-postrgres10.5
+    # restart: unless-stopped
+    volumes:
+    - ${DATA_PATH_HOST}/postgres/10.5:/var/lib/postgresql/data
+    # networks:
+    # - main
+    ports:
+    - "5434:5432"
+    environment:
+    - POSTGRES_DB=snk
+    - POSTGRES_USER=snk-not-a-secret
+    - POSTGRES_PASSWORD=snk-not-a-secret
+
+  rabbitmq:
+    image: rabbitmq:3.7.7-management-alpine
+    container_name: snk-rabbitmq3.7.7
+    # restart: unless-stopped
+    # networks:
+    # - main
+    ports:
+    - "5672:5672"
+    - "15672:15672"
+
+  elasticsearch:
+    # image: blacktop/elasticsearch:2.4
+    image: elasticsearch:2.4.5
+    container_name: snk-elastic2.4.5
+    restart: "no"
+    # environment:
+    # - cluster.name=librariesio-cluster
+    # - bootstrap.memory_lock=true
+    # - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    # ulimits:
+    #   memlock:
+    #    soft: -1
+    #     hard: -1
+    ports:
+    - "9200:9200"
+    - "9300:9300"
+    volumes:
+    - elasticsearch-data:/usr/share/elasticsearch/data
+    command: -Daction.auto_create_index=true
+    # networks:
+    # - main
+    # - frontend
+    # - backend
+
+  redis:
+    image: redis:3.2-alpine3.8
+    container_name: snk-redis3.2
+    restart: unless-stopped
+    volumes:
+    - ${DATA_PATH_HOST}/redis/3.2:/var/lib/redis
+    # - redis-data:/var/lib/redis
+    ports:
+    - "6379:6379"
+    command: redis-server --appendonly yes
+    # networks:
+    # - main
+    # - backend
+
+  manticore:
+    image: manticoresearch/manticore:2.7.2
+    container_name: snk-manticore2.7.2
+    restart: "no"
+    # restart: unless-stopped
+    depends_on:
+    - postgres
+    - mysql
+    links:
+    - postgres:postgres
+    - mysql:mysql
+    volumes:
+    - "$PWD/config/sphinxsearch:/opt/sphinxsearch"
+    - "${DATA_PATH_HOST}/manticore/2.7.2/data:/var/lib/manticore/data"
+    - "${DATA_PATH_HOST}/manticore/2.7.2/log:/var/lib/manticore/log"
+    - "/Volumes/HardDrive/datasets/libraries.io/csv:/datasets/csv"
+    # - "${DATA_PATH_HOST}/manticore/2.7.2/idf:/usr/local/sphinx/var"
+    # - "$PWD/share/sphinxsearch:/usr/local/share/sphinx"
+    ports:
+    - 9306:9306
+    - 9312:9312
+    command: [ "/usr/bin/searchd", "--nodetach", "--config", "/opt/sphinxsearch/sphinx.conf" ]
+    # networks:
+    # - main
+    # - backend
+    #
+    # docker-compose exec manticore sh -c "ls -l /opt/sphinxsearch/*"
+    # docker-compose exec manticore sh -c "cat /opt/sphinxsearch/sphinx.conf"
+    # docker-compose exec manticore sh -c "indexer --config /opt/sphinxsearch/sphinx.conf --verbose debug --print-queries libiocsv_plain --rotate"
+    # docker-compose exec manticore sh -c "indexer --config /opt/sphinxsearch/sphinx.conf libiocsv_plain --rotate"
+    # docker-compose exec manticore sh -c "head -n 1 /datasets/projects.csv"
+    # docker-compose exec manticore sh -c "sed -i '1d' /datasets/projects.csv"
+    # docker-compose exec manticore sh -c "tail -n +2 /datasets/projects.csv > /datasets/projects.csv"
+    # docker-compose exec manticore sh -c "head -n 1 /datasets/projects.csv && indexer --config /opt/sphinxsearch/sphinx.conf libiocsv_plain --rotate"
+    # docker-compose exec manticore indexer libiocsv_plain --rotate
+    # docker-compose exec manticore indexer libiocsv_plain --rotate
+
