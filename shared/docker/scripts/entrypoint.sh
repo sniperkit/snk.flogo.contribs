@@ -53,15 +53,6 @@ case "$1" in
     exec /bin/bash $@
     ;;
 
-  'front-dev')
-    go get -u github.com/FiloSottile/gvt
-
-    cd cd /tmp/flogo-web/build/server/local/engines/flogo-web
-    pwd
-    flogo ensure
-    exec /tmp/flogo-web/docker-start.sh eula-accept
-    ;;
-
   'bash')
     echo "- Golang version: "
     go version

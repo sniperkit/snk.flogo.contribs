@@ -13,7 +13,7 @@ version: '3.6'
 
 services:
 
-  snk-flogo-web: &flogo_base
+  flogo-web: &flogo_base
     image: sniperkit/flogo-web:latest-official
     container_name: snk-flogo-web
     build:
@@ -29,18 +29,18 @@ services:
     # networks:
     # - main
 
-  snk-flogo-dev:
+  flogo-dev:
     <<: *flogo_base
     image: sniperkit/flogo-web:latest-dev
     container_name: snk-flogo-dev
     ports:
     - "3303:3303"
     volumes:
+    - "$PWD/shared/backups:/snk/backups"
     - "$PWD/shared/dumps:/snk/dumps"
     - "$PWD/shared/dist:/snk/dist"
-    - "$PWD/imports.go:/tmp/flogo-web/build/server/local/engines/flogo-web/src/flogo-web/imports.go"
-    # - "$PWD/scripts:/snk/scripts"
     - "$PWD/workspace:/snk/workspace"
+    - "$PWD/imports.go:/tmp/flogo-web/build/server/local/engines/flogo-web/src/flogo-web/imports.go"
     working_dir: "/tmp/flogo-web/build/server/local/engines/flogo-web"
     entrypoint: /snk/scripts/entrypoint.sh
     command: "bash"
