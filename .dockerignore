@@ -20,6 +20,21 @@ node_modules/
 node_modules/*
 node_modules/**
 
+/node_modules
+/node_modules/
+/node_modules/*
+/node_modules/**
+
+vendor
+vendor/
+vendor/*
+vendor/**
+
+/vendor
+/vendor/
+/vendor/*
+/vendor/**
+
 # /tmp
 # /tmp*
 tmp
@@ -46,6 +61,19 @@ Dockerfile*
 Dockerfile
 Gopkg.*
 
-# data
-# data/**
+shared/data
+shared/data/
+shared/data/*
+shared/data/**
+
+shared/dumps
+shared/dumps/
+shared/dumps/*
+shared/dumps/**
+
+shared/logs
+shared/logs/
+shared/logs/*
+shared/logs/**
+
 
